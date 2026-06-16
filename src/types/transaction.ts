@@ -1,9 +1,11 @@
 export type TransactionsType = "Incoming Money" | "Subscriptions" | "Bills";
 export type TransactionStatus = "Paid" | "Unpaid" | "In progress";
 export type RecurringType = "Bills" | "Subscriptions" | "Groceries" | "Other";
+export type CategoryType = "Groceries" | "Gas" | "Pets" | "Self" | "Other";
 
 export interface Transaction {
-    id: string;
+    // id: string;
+    title: string;
     description: string;
     amount: number;
     date: Date;
@@ -12,6 +14,7 @@ export interface Transaction {
     recurring: RecurringType;
     reminder?: string;
     reminderDate?: Date;
-   // note?: string; //the ? is probably going to be a custom message to add maybe we can change this to reminder
-   
+
+    // note?: string; //the ? is probably going to be a custom message to add maybe we can change this to reminder
+
 }
