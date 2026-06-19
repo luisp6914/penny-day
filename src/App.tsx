@@ -1,15 +1,13 @@
-import Header from "./components/layout/Header";
 import BudgetPreviewSection from "./components/layout/BudgetPreview";
 import Calendar from "./components/layout/Calendar";
 import SelectedDayTransaction from "./components/layout/SelectedDayTransaction";
 import CategoryBreakdown from "./components/layout/CetegoryBreakdown";
-
-import './App.css'
+import Navbar from "./components/layout/Navbar";
 
 function App() {
   return (
     <div className="app">
-      <Header />
+      <Navbar />
       <main className="main-content">
         <BudgetPreviewSection />
         <Calendar />
