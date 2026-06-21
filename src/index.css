@@ -1,5 +1,32 @@
 @import "tailwindcss";
+
 .calendar {
   height: 80vh;
 
+}
+
+/* Changes the background for the current day */
+.fc-day-today {
+  background-color: rgba(241, 99, 182, 0.3) !important;
+}
+
+
+/* .hover-day {
+  transition: all 100.00 ease;
+  cursor: pointer;
+} */
+
+/* This is the css for the events / pills in the dates */
+.fc-event {
+  border: none !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  padding: 2px 4px !important;
+}
+
+/* This is just the hover effect */
+.hover-day:hover {
+  background-color: rgba(0, 0, 0, 0.10);
+  box-shadow: inset 0 0 0 1px rgb(0, 0, 0, 1.00);
+  transform: scale(1.02);
 }
