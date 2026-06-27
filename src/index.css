@@ -3,3 +3,18 @@
   height: 80vh;
 
 }
+
+
+/* Utilities */
+@utility no-spinner {
+  /* webkit browsers like chrome, safari, edge*/
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  /* Firefox */
+  & {
+    appearance: textfield;
+  }
+}
