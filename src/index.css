@@ -18,6 +18,8 @@
   & {
     appearance: textfield;
   }
+}
+
 /* Changes the background for the current day */
 .fc-day-today {
   background-color: rgba(241, 99, 182, 0.3) !important;
