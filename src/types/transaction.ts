@@ -1,17 +1,20 @@
-export type TransactionsType = "Incoming Money" | "Subscriptions" | "Bills";
+import type { RecurrenceRule } from "./recurrence";
+import type { Category } from "./category";
+
+export type TransactionDirection = "Income" | "Expense";
 export type TransactionStatus = "Paid" | "Unpaid" | "In progress";
-export type RecurringType = "Bills" | "Subscriptions" | "Groceries" | "Other";
-export type CategoryType = "Groceries" | "Gas" | "Pets" | "Self" | "Other";
 
 export interface Transaction {
     // id: string;
     title: string;
     description: string;
     amount: number;
-    date: Date;
-    type: TransactionsType;
+    date: Date; //This is for one time transaction
+    type: TransactionDirection;
     status: TransactionStatus;
-    recurring: RecurringType;
+    categoryId: Category["id"];
+    isRecurring: boolean;
+    recurrence?: RecurrenceRule;
     reminder?: string;
     reminderDate?: Date;
 
