@@ -6,7 +6,7 @@ interface WeeklyRecurrence{
     dayOfWeek: number; //0-6(Sun-Sat)
 }
 
-interface MonthlyAnchorConfig{
+export interface MonthlyAnchorConfig{
     anchor: MonthlyAnchor;
     dayOfMonth?: number; //only present when "DayOfMonth";
 }
@@ -14,7 +14,7 @@ interface MonthlyAnchorConfig{
 interface MonthlyRecurrence{
     frequency: "Monthly";
     isBiweekly: boolean;
-    monthlyAnchor: MonthlyAnchorConfig[];
+    anchors: MonthlyAnchorConfig[];
 }
 
 export type RecurrenceRule = WeeklyRecurrence | MonthlyRecurrence;

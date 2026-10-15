@@ -9,7 +9,7 @@ export interface Transaction {
     title: string;
     description: string;
     amount: number;
-    date: Date;
+    date: Date; //This is for one time transaction
     type: TransactionDirection;
     status: TransactionStatus;
     categoryId: Category["id"];

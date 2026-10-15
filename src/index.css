@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+@theme {
+  /* Surfaces, light → dark layering */
+  --color-bg-base: oklch(0.21 0.03 264.66);       /* page/app background */
+  --color-bg-surface: #111828;                     /* modal/card background (one layer up) */
+  --color-bg-surface-alt: oklch(0.28 0.03 256.85); /* input fields, toggle track (two layers up) */
+
+  /* Borders */
+  --color-border-subtle: #2E3542;                  /* default input/toggle border */
+  --color-border-strong: #3a4350;                   /* Cancel button bg, heavier divider */
+
+  /* Brand / accent */
+  --color-accent: #625fff;
+  --color-accent-hover: #7C86FF;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-muted: oklch(0.55 0.03 264.36);
+}
+
 .calendar {
   height: 80vh;
 
