@@ -1,23 +1,30 @@
 import type { RecurrenceRule } from "./recurrence";
 import type { Category } from "./category";
 
-export type TransactionDirection = "Income" | "Expense";
-export type TransactionStatus = "Paid" | "Unpaid" | "In progress";
+export type TransactionType = "Income" | "Expense" | "Bill" | "Savings";
 
+//All dates are local "YYYY-MM-DD" strings so they compare/sort as text and survive localStorage.
 export interface Transaction {
-    // id: string;
+    id: string;
     title: string;
-    description: string;
     amount: number;
-    date: Date; //This is for one time transaction
-    type: TransactionDirection;
-    status: TransactionStatus;
+    type: TransactionType;
     categoryId: Category["id"];
-    isRecurring: boolean;
+    date: string; //expected date of a one-time transaction, or the first date of a recurring one
     recurrence?: RecurrenceRule;
-    reminder?: string;
-    reminderDate?: Date;
+    completions: Record<string, string>; //expected date -> actual date it was paid/received
+    skippedDates?: string[]; //single repeats the user deleted ("only this one")
+    notes?: string;
+    createdAt: string;
+}
 
-    // note?: string; //the ? is probably going to be a custom message to add maybe we can change this to reminder
+export type NewTransaction = Omit<Transaction, "id" | "createdAt" | "completions" | "skippedDates">;
 
+//One dated instance of a transaction (a recurring transaction has many).
+//It always stays on its expected date; actualDate only records when it was paid/received.
+export interface Occurrence {
+    key: string;
+    transaction: Transaction;
+    expectedDate: string;
+    actualDate?: string;
 }

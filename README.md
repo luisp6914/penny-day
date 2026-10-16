@@ -24,11 +24,32 @@ Users can track paydays, manage recurring income, organize expenses by category,
 
 ## Tech Stack
 
-* React
-* TypeScript
+* React + TypeScript
 * Vite
-* CSS
+* Tailwind CSS v4
+* Radix UI (dialogs, selects, radio groups)
+* React Router (HashRouter)
 * LocalStorage
+
+## Project Structure
+
+```txt
+src/
+  pages/              CalendarPage, BudgetPage, LoansPage (one per route)
+  components/
+    layout/           Navbar
+    calendar/         MonthGrid, DayCell, DayPanel (expanded day), WeeklyGlance
+    budget/           BudgetSummaryCards, CategoryBreakdown, MonthSwitcher
+    transactions/     TransactionForm, OccurrenceItem, DeleteOccurrenceDialog, StatusBadge
+    loans/            DebtForm, DebtCard
+    modals/           BaseModal, TransactionFormModal, DebtFormModal
+    ui/               shared inputs, segmented control, class strings
+  context/            TransactionsProvider, DebtsProvider (state + localStorage)
+  hooks/              useTransactions, useDebts, useOccurrences
+  utils/              date, recurrence, status, budget, weekly, loans, money, storage
+  types/              Transaction, RecurrenceRule, Category, Debt, BudgetSummary
+  constants/          categories (per transaction type), transaction type colors
+```
 
 ## Getting Started
 
@@ -142,59 +163,54 @@ Remaining Balance = Total Income - Total Spent - Total Saved
 
 ## TypeScript Models
 
+All dates are local `"YYYY-MM-DD"` strings, so they sort and compare as text and survive LocalStorage.
+
 ### Transaction
 
 ```ts
-export type TransactionType = "income" | "expense" | "bill" | "savings";
-
-export type TransactionStatus =
-  | "expected"
-  | "received"
-  | "received-early"
-  | "received-late"
-  | "upcoming"
-  | "paid"
-  | "overdue";
-
-export type RecurringType =
-  | "none"
-  | "weekly"
-  | "biweekly"
-  | "monthly"
-  | "twice-monthly";
+export type TransactionType = "Income" | "Expense" | "Bill" | "Savings";
 
 export interface Transaction {
   id: string;
   title: string;
   amount: number;
   type: TransactionType;
-  categoryId: string;
-  expectedDate: string;
-  actualDate?: string;
-  status: TransactionStatus;
-  recurringType: RecurringType;
+  categoryId: number;
+  date: string;                         // expected date, or first date of a recurring series
+  recurrence?: RecurrenceRule;          // omitted for one-time transactions
+  completions: Record<string, string>;  // expected date -> actual date it was paid/received
   notes?: string;
   createdAt: string;
 }
 ```
 
+Status is **derived**, not stored: comparing an occurrence's actual date with its expected date gives
+`Received early` / `Received late` / `Paid` / `Overdue` / `Upcoming` and so on (see `utils/status.ts`).
+
+### Recurrence
+
+```ts
+type RecurrenceRule =
+  | { frequency: "Weekly" | "Biweekly"; dayOfWeek: number; endDate?: string }
+  | { frequency: "Monthly"; anchors: MonthlyAnchorConfig[]; endDate?: string }; // 2 anchors = twice a month
+```
+
 ### Category
 
 ```ts
-export interface Category {
-  id: string;
+export type Category = {
+  id: number;
   name: string;
   color: string;
-  monthlyLimit?: number;
 }
 ```
 
 ### Budget Summary
 
 ```ts
-export interface BudgetSummary {
+export type BudgetSummary = {
   totalIncome: number;
-  totalSpent: number;
+  totalSpent: number;   // expenses + bills
   totalSaved: number;
   remainingBalance: number;
 }
