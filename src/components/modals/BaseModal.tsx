@@ -1,29 +1,30 @@
 import { Dialog } from "radix-ui";
+import { primaryButtonClass, secondaryButtonClass } from "../ui/styles";
 
 interface BaseModalProps{
     title: string;
     isOpen: boolean;
-    onClose: (open: boolean) => void;
+    onOpenChange: (open: boolean) => void;
     children: React.ReactNode;
-    onSubmit: () => void;
+    formId: string; //the submit button submits this <form>, so native validation runs
     submitLabel?: string;
     cancelLabel?: string;
 }
 
-const BaseModal = ({title, isOpen, onClose, children, onSubmit, submitLabel = "Submit", cancelLabel = "Cancel"}: BaseModalProps) => {
-    
+const BaseModal = ({title, isOpen, onOpenChange, children, formId, submitLabel = "Submit", cancelLabel = "Cancel"}: BaseModalProps) => {
+
     return(
-        <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
             <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/50"/>
-                <Dialog.Content onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-bg-surface border border-border-subtle rounded-lg p-6 w-full max-w-md shadow-xl">
-                    <Dialog.Title className="text-xl text-white font-semibold mb-4"> {title} </Dialog.Title>
+                <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60"/>
+                <Dialog.Content aria-describedby={undefined} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} className="fixed top-1/2 left-1/2 z-40 max-h-[90vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border-subtle bg-bg-surface p-6 shadow-xl">
+                    <Dialog.Title className="mb-4 text-xl font-semibold text-white">{title}</Dialog.Title>
 
                     <div>{children}</div>
 
-                    <div className="flex justify-end gap-3 mt-5">
-                        <Dialog.Close className="px-4 py-2 rounded text-white bg-[#3A4350] hover:bg-[#535B66]"> {cancelLabel} </Dialog.Close>
-                        <button onClick={onSubmit} className="px-4 py-2 rounded text-white bg-[#625FFF] hover:bg-accent-hover"> {submitLabel} </button>
+                    <div className="mt-6 flex justify-end gap-3">
+                        <Dialog.Close className={secondaryButtonClass}>{cancelLabel}</Dialog.Close>
+                        <button type="submit" form={formId} className={primaryButtonClass}>{submitLabel}</button>
                     </div>
 
                 </Dialog.Content>
