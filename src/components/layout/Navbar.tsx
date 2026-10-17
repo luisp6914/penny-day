@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import TransactionFormModal from "../modals/TransactionFormModal";
 
 const NAV_LINKS = [
@@ -22,10 +22,11 @@ const Navbar = () => {
         <nav className="p-4 bg-gray-800 text-white">
             {/* Desktop view */}
             <div className="mx-auto flex max-w-7xl gap-5 items-center">
-                <div className="flex gap-1 md:gap-0 md:flex-col items-center">
-                    <Icon icon={"streamline-ultimate-color:coin-purse-1"} width={48} height={48}/>
-                    <p className="font-bold text-3xl md:text-lg leading-0">PennyDay</p>
-                </div>
+                <Link to="/" aria-label="PennyDay home" className="flex shrink-0 items-center gap-2">
+                    <img src={`${import.meta.env.BASE_URL}logo-mark.png`} alt="" width={44} height={44} className="h-11 w-11"/>
+                    {/* "Penny" is white here (the logo's navy disappears on the dark bar); "Day" keeps the logo teal */}
+                    <span className="text-2xl font-bold tracking-tight">Penny<span className="text-[#1FB5A3]">Day</span></span>
+                </Link>
 
                 <ul className="hidden md:flex gap-3 w-full items-center">
                     {NAV_LINKS.map(link => (
