@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { TYPE_COLORS } from "../../constants/transactionTypes";
 import { useOccurrences, useStartingBalance, useTransactions } from "../../hooks/useTransactions";
+import { buildIncludedKeys } from "../../utils/balance";
 import { formatFullDate, todayKey } from "../../utils/date";
 import { formatCurrency } from "../../utils/money";
 import { inputClass, primaryButtonClass, secondaryButtonClass } from "../ui/styles";
@@ -9,7 +10,7 @@ import { inputClass, primaryButtonClass, secondaryButtonClass } from "../ui/styl
 //Lets the user say how much money they actually have, so the weekly running balance starts from reality.
 const StartingBalanceCard = () => {
     const { startingBalance, setStartingBalance } = useStartingBalance();
-    const { completeOccurrence } = useTransactions();
+    const { transactions, completeOccurrence } = useTransactions();
     const [isEditing, setIsEditing] = useState(false);
     const [amount, setAmount] = useState("");
     const [asOf, setAsOf] = useState(todayKey);
@@ -40,10 +41,12 @@ const StartingBalanceCard = () => {
         if (!asOf) return setError("Pick the date this balance is from.");
         //Ticked items already went through, so mark them done on the balance day; that keeps them
         //from being added or subtracted a second time.
-        for (const o of sameDay) {
-            if (!notYetIn.has(o.key)) completeOccurrence(o.transaction.id, o.expectedDate, asOf);
-        }
-        setStartingBalance({ amount: Math.round(parsed * 100) / 100, asOf });
+        const ticked = sameDay.filter(o => !notYetIn.has(o.key));
+        for (const o of ticked) completeOccurrence(o.transaction.id, o.expectedDate, asOf);
+        //Remember exactly what this balance already contains, so anything marked paid later
+        //(even on the same day) is still taken out of it.
+        const included = buildIncludedKeys(transactions, asOf, todayKey(), ticked.map(o => o.key));
+        setStartingBalance({ amount: Math.round(parsed * 100) / 100, asOf, included });
         setIsEditing(false);
     };
 
@@ -86,7 +89,7 @@ const StartingBalanceCard = () => {
                     </fieldset>
                 )}
                 <p className="text-[0.7rem] text-text-muted">
-                    Anything dated before this day, or already marked paid or received by then, is treated as already in this balance.
+                    Anything due before this day, or already marked paid or received, is treated as already in this balance. Anything you mark after saving is added or taken out.
                 </p>
                 {error && <p role="alert" className="text-xs text-expense">{error}</p>}
                 <div className="flex justify-end gap-2">
