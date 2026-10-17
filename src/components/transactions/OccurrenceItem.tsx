@@ -6,7 +6,7 @@ import { useTransactions } from "../../hooks/useTransactions";
 import type { Occurrence } from "../../types/transaction";
 import { formatShortDate, todayKey } from "../../utils/date";
 import { formatCurrency } from "../../utils/money";
-import { describeRecurrence } from "../../utils/recurrence";
+import { describeRecurrence, isAutoSaved } from "../../utils/recurrence";
 import { getOccurrenceStatus } from "../../utils/status";
 import TransactionFormModal from "../modals/TransactionFormModal";
 import { iconButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from "../ui/styles";
@@ -30,11 +30,13 @@ const OccurrenceItem = ({ occurrence, showDate = false }: OccurrenceItemProps) =
     const status = getOccurrenceStatus(occurrence);
     const isIncome = transaction.type === "Income";
     const doneLabel = COMPLETED_LABEL[transaction.type];
+    //Recurring savings save themselves on their date, so there's nothing to mark or undo.
+    const isAuto = isAutoSaved(transaction) && !transaction.completions[expectedDate];
 
     const details = [
         category.name,
         transaction.recurrence && describeRecurrence(transaction.recurrence),
-        occurrence.actualDate && `${doneLabel} ${formatShortDate(occurrence.actualDate)}`,
+        !isAuto && occurrence.actualDate && `${doneLabel} ${formatShortDate(occurrence.actualDate)}`,
     ].filter(Boolean);
 
     const handleConfirm = () => {
@@ -75,7 +77,12 @@ const OccurrenceItem = ({ occurrence, showDate = false }: OccurrenceItemProps) =
                         </div>
                     ) : (
                         <div className="mt-2 flex items-center gap-1">
-                            {occurrence.actualDate ? (
+                            {isAuto ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs text-text-muted">
+                                    <Icon icon="mdi:autorenew" width={14} height={14} />
+                                    {occurrence.actualDate ? "Saved automatically" : `Saves automatically on ${formatShortDate(expectedDate)}`}
+                                </span>
+                            ) : occurrence.actualDate ? (
                                 <button type="button" className="cursor-pointer rounded px-2 py-1 text-xs text-text-muted hover:bg-white/5 hover:text-white" onClick={() => reopenOccurrence(transaction.id, expectedDate)}>
                                     Undo {doneLabel.toLowerCase()}
                                 </button>

@@ -1,6 +1,6 @@
 import type { MonthlyAnchorConfig, RecurrenceRule } from "../types/recurrence";
 import type { Occurrence, Transaction, TransactionType } from "../types/transaction";
-import { addDays, daysBetween, daysInMonth, ordinal, parseDateKey, toDateKey, WEEKDAYS } from "./date";
+import { addDays, daysBetween, daysInMonth, ordinal, parseDateKey, todayKey, toDateKey, WEEKDAYS } from "./date";
 
 const TYPE_ORDER: Record<TransactionType, number> = { Income: 0, Bill: 1, Expense: 2, Savings: 3 };
 
@@ -49,19 +49,27 @@ export function expectedDatesBetween(transaction: Transaction, from: string, to:
     return dates;
 }
 
+//Recurring savings are usually an automatic transfer, so they count as saved on their own date
+//instead of waiting for the user to mark them.
+export function isAutoSaved(transaction: Transaction): boolean {
+    return transaction.type === "Savings" && Boolean(transaction.recurrence);
+}
+
 //Every occurrence expected between from and to (inclusive), minus repeats the user skipped.
-export function getOccurrences(transactions: Transaction[], from: string, to: string): Occurrence[] {
+export function getOccurrences(transactions: Transaction[], from: string, to: string, today: string = todayKey()): Occurrence[] {
     const occurrences: Occurrence[] = [];
 
     for (const transaction of transactions) {
         const skipped = new Set(transaction.skippedDates);
+        const autoSaved = isAutoSaved(transaction);
         for (const expectedDate of expectedDatesBetween(transaction, from, to)) {
             if (skipped.has(expectedDate)) continue;
+            const autoDate = autoSaved && expectedDate <= today ? expectedDate : undefined;
             occurrences.push({
                 key: `${transaction.id}:${expectedDate}`,
                 transaction,
                 expectedDate,
-                actualDate: transaction.completions[expectedDate],
+                actualDate: transaction.completions[expectedDate] ?? autoDate,
             });
         }
     }
