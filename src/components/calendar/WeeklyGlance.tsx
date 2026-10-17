@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { useStartingBalance, useTransactions } from "../../hooks/useTransactions";
 import { formatMonth, formatRange, formatShortDate, monthBounds, todayKey, type MonthRef } from "../../utils/date";
 import { formatCurrency } from "../../utils/money";
-import { getSafeToSpend, getWeeklySummaries, type WeekSummary } from "../../utils/weekly";
+import { getBalanceSnapshot } from "../../utils/balance";
+import { getWeeklySummaries, type WeekSummary } from "../../utils/weekly";
 import StartingBalanceCard from "./StartingBalanceCard";
 
 const signed = (n: number) => `${n < 0 ? "−" : ""}${formatCurrency(Math.abs(n))}`;
@@ -45,7 +46,12 @@ const WeeklyGlance = ({ month }: { month: MonthRef }) => {
         return getWeeklySummaries(transactions, start, end, startingBalance);
     }, [transactions, month, startingBalance]);
 
-    const safe = useMemo(() => getSafeToSpend(transactions, today, startingBalance), [transactions, today, startingBalance]);
+    const snapshot = useMemo(
+        () => (startingBalance ? getBalanceSnapshot(transactions, startingBalance, today) : null),
+        [transactions, today, startingBalance],
+    );
+    const nextIncome = snapshot?.nextIncome;
+    const isIncomeLate = nextIncome !== undefined && nextIncome.expectedDate < today;
 
     return (
         <section className="flex flex-col gap-3 rounded-2xl bg-bg-base p-4" aria-labelledby="glance-title">
@@ -53,17 +59,29 @@ const WeeklyGlance = ({ month }: { month: MonthRef }) => {
 
             <StartingBalanceCard />
 
-            <div className="rounded-xl bg-linear-to-br from-accent/30 to-accent/5 p-4">
-                <p className="text-xs font-medium text-white/80">
-                    {safe.nextIncome ? "Left to spend until your next income" : "Left to spend this week"}
-                </p>
-                <p className={`mt-1 text-3xl font-bold tabular-nums ${safe.amount < 0 ? "text-expense" : "text-white"}`}>{signed(safe.amount)}</p>
-                <p className="mt-1 text-xs text-white/70">
-                    {safe.nextIncome
-                        ? `Next: ${safe.nextIncome.transaction.title} +${formatCurrency(safe.nextIncome.transaction.amount)} on ${formatShortDate(safe.nextIncome.expectedDate)}`
-                        : "No income scheduled in the next two months."}
-                </p>
-            </div>
+            {snapshot && (
+                <div className="rounded-xl bg-linear-to-br from-accent/30 to-accent/5 p-4" aria-live="polite">
+                    <div className="flex items-baseline justify-between gap-2 border-b border-white/10 pb-3">
+                        <p className="text-xs font-medium text-white/80">Current balance</p>
+                        <p className={`text-lg font-semibold tabular-nums ${snapshot.currentBalance < 0 ? "text-expense" : "text-white"}`}>{signed(snapshot.currentBalance)}</p>
+                    </div>
+
+                    <p className="mt-3 text-xs font-medium text-white/80">
+                        {nextIncome ? "Spending power until your next income" : "Spending power this week"}
+                    </p>
+                    <p className={`mt-1 text-3xl font-bold tabular-nums ${snapshot.spendingPower < 0 ? "text-expense" : "text-white"}`}>{signed(snapshot.spendingPower)}</p>
+                    <p className="mt-1 text-xs text-white/70">
+                        {snapshot.dueBeforeIncome > 0
+                            ? `Current balance minus ${formatCurrency(snapshot.dueBeforeIncome)} still due through ${formatShortDate(snapshot.through)}`
+                            : `Nothing else due through ${formatShortDate(snapshot.through)}`}
+                    </p>
+                    <p className={`mt-2 text-xs ${isIncomeLate ? "text-bill" : "text-white/70"}`}>
+                        {nextIncome
+                            ? `${isIncomeLate ? "Late: " : "Next: "}${nextIncome.transaction.title} +${formatCurrency(nextIncome.transaction.amount)} ${isIncomeLate ? "was due" : "on"} ${formatShortDate(nextIncome.expectedDate)}`
+                            : "No income scheduled in the next two months."}
+                    </p>
+                </div>
+            )}
 
             <h3 className="mt-1 text-xs font-semibold tracking-wide text-text-muted uppercase">{formatMonth(month)} by week</h3>
             <ul className="flex flex-col gap-2">

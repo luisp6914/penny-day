@@ -1,7 +1,8 @@
 import type { StartingBalance } from "../types/balance";
 import type { Occurrence, Transaction } from "../types/transaction";
 import { addDays, weekStartOf } from "./date";
-import { getOccurrences, signedAmount } from "./recurrence";
+import { countsAgainstBalance, moneyDate } from "./balance";
+import { getOccurrences } from "./recurrence";
 
 export interface WeekSummary {
     start: string; //Sunday
@@ -15,13 +16,7 @@ export interface WeekSummary {
     remaining: number; //carriedOver + income - expenses - savings, carried into next week
 }
 
-//A starting balance is what's in the account on its date. An occurrence still has to come out
-//of (or go into) it unless it's dated before then, or was already paid/received by then.
-export function countsAgainstBalance(occurrence: Occurrence, balance: StartingBalance | null): boolean {
-    if (!balance) return true;
-    if (occurrence.actualDate && occurrence.actualDate <= balance.asOf) return false;
-    return occurrence.expectedDate >= balance.asOf;
-}
+const PAID_EARLY_LOOKAHEAD_DAYS = 366;
 
 function earliestDate(transactions: Transaction[], fallback: string): string {
     return transactions.reduce((min, t) => (t.date < min ? t.date : min), fallback);
@@ -45,11 +40,14 @@ export function getWeeklySummaries(
     const firstWeek = weekStartOf(start < from ? start : from);
     const balanceWeek = balance ? weekStartOf(balance.asOf) : null;
     const lastWeek = weekStartOf(to);
-    const occurrences = getOccurrences(transactions, firstWeek, addDays(lastWeek, 6), today);
+    //Look past the last week too: something due later may have been paid early inside the range.
+    const occurrences = getOccurrences(transactions, firstWeek, addDays(lastWeek, 6 + PAID_EARLY_LOOKAHEAD_DAYS), today);
 
+    //Counted items land in the week their money moved (paid early = the week it was paid).
     const byWeek = new Map<string, Occurrence[]>();
     for (const occurrence of occurrences) {
-        const week = weekStartOf(occurrence.expectedDate);
+        const counted = balance !== null && countsAgainstBalance(occurrence, balance);
+        const week = weekStartOf(counted ? moneyDate(occurrence) : occurrence.expectedDate);
         byWeek.set(week, [...(byWeek.get(week) ?? []), occurrence]);
     }
 
@@ -79,28 +77,4 @@ export function getWeeklySummaries(
         if (!beforeBalance) carriedOver = remaining;
     }
     return summaries;
-}
-
-export interface SafeToSpend {
-    amount: number;
-    through: string; //last day the amount has to last
-    nextIncome?: Occurrence;
-}
-
-const NEXT_INCOME_LOOKAHEAD_DAYS = 62;
-
-//What's left to spend until the next paycheck: the starting balance plus every planned flow
-//up to the day before it. With no income coming up, it covers through the end of this week instead.
-export function getSafeToSpend(transactions: Transaction[], today: string, balance: StartingBalance | null = null): SafeToSpend {
-    const start = chainStart(transactions, today, balance);
-    const from = start < today ? start : today;
-    const occurrences = getOccurrences(transactions, from, addDays(today, NEXT_INCOME_LOOKAHEAD_DAYS), today);
-    const nextIncome = occurrences.find(o => o.transaction.type === "Income" && o.expectedDate > today);
-    const through = nextIncome ? addDays(nextIncome.expectedDate, -1) : addDays(weekStartOf(today), 6);
-
-    const amount = occurrences
-        .filter(o => o.expectedDate <= through && countsAgainstBalance(o, balance))
-        .reduce((sum, o) => sum + signedAmount(o), balance?.amount ?? 0);
-
-    return { amount, through, nextIncome };
 }

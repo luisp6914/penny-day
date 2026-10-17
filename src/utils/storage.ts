@@ -49,8 +49,10 @@ export function loadStartingBalance(): StartingBalance | null {
     try {
         const parsed: unknown = JSON.parse(localStorage.getItem(BALANCE_KEY) ?? "null");
         if (typeof parsed !== "object" || parsed === null) return null;
-        const { amount, asOf } = parsed as Record<string, unknown>;
-        return typeof amount === "number" && typeof asOf === "string" ? { amount, asOf } : null;
+        const { amount, asOf, included } = parsed as Record<string, unknown>;
+        if (typeof amount !== "number" || typeof asOf !== "string") return null;
+        const keys = Array.isArray(included) ? included.filter((k): k is string => typeof k === "string") : undefined;
+        return { amount, asOf, included: keys };
     } catch {
         return null;
     }
