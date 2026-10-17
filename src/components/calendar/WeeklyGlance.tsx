@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { useTransactions } from "../../hooks/useTransactions";
+import { useStartingBalance, useTransactions } from "../../hooks/useTransactions";
 import { formatMonth, formatRange, formatShortDate, monthBounds, todayKey, type MonthRef } from "../../utils/date";
 import { formatCurrency } from "../../utils/money";
 import { getSafeToSpend, getWeeklySummaries, type WeekSummary } from "../../utils/weekly";
+import StartingBalanceCard from "./StartingBalanceCard";
 
 const signed = (n: number) => `${n < 0 ? "−" : ""}${formatCurrency(Math.abs(n))}`;
 
@@ -14,19 +15,21 @@ const Row = ({ label, value, className = "" }: { label: string; value: string; c
 );
 
 const WeekCard = ({ week, isCurrent }: { week: WeekSummary; isCurrent: boolean }) => (
-    <li className={`rounded-lg border p-3 ${isCurrent ? "border-accent/60 bg-accent/[0.07]" : "border-border-subtle bg-bg-surface"}`}>
+    <li className={`rounded-lg border p-3 ${isCurrent ? "border-accent/60 bg-accent/[0.07]" : "border-border-subtle bg-bg-surface"} ${week.beforeBalance ? "opacity-60" : ""}`}>
         <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-white">{formatRange(week.start, week.end)}</p>
             {isCurrent && <span className="rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-semibold text-white uppercase">This week</span>}
         </div>
         <dl className="grid gap-1 text-xs">
-            <Row label="Carried over" value={signed(week.carriedOver)} className={week.carriedOver < 0 ? "text-expense" : "text-white"} />
+            {week.beforeBalance
+                ? <p className="text-text-muted">Before your starting balance, so not counted.</p>
+                : <Row label={week.startsBalance ? "Starting balance" : "Carried over"} value={signed(week.carriedOver)} className={week.carriedOver < 0 ? "text-expense" : "text-white"} />}
             <Row label="Income" value={`+${formatCurrency(week.income)}`} className="text-income" />
             <Row label="Incoming expenses" value={`−${formatCurrency(week.expenses)}`} className="text-expense" />
             {week.savings > 0 && <Row label="Savings" value={`−${formatCurrency(week.savings)}`} className="text-savings" />}
         </dl>
         <div className="mt-2 flex items-baseline justify-between border-t border-border-subtle pt-2">
-            <span className="text-xs text-text-muted">Left for next week</span>
+            <span className="text-xs text-text-muted">{week.beforeBalance ? "Net this week" : "Left for next week"}</span>
             <span className={`font-semibold tabular-nums ${week.remaining < 0 ? "text-expense" : "text-white"}`}>{signed(week.remaining)}</span>
         </div>
     </li>
@@ -34,18 +37,21 @@ const WeekCard = ({ week, isCurrent }: { week: WeekSummary; isCurrent: boolean }
 
 const WeeklyGlance = ({ month }: { month: MonthRef }) => {
     const { transactions } = useTransactions();
+    const { startingBalance } = useStartingBalance();
     const today = todayKey();
 
     const weeks = useMemo(() => {
         const { start, end } = monthBounds(month);
-        return getWeeklySummaries(transactions, start, end);
-    }, [transactions, month]);
+        return getWeeklySummaries(transactions, start, end, startingBalance);
+    }, [transactions, month, startingBalance]);
 
-    const safe = useMemo(() => getSafeToSpend(transactions, today), [transactions, today]);
+    const safe = useMemo(() => getSafeToSpend(transactions, today, startingBalance), [transactions, today, startingBalance]);
 
     return (
         <section className="flex flex-col gap-3 rounded-2xl bg-bg-base p-4" aria-labelledby="glance-title">
             <h2 id="glance-title" className="text-sm font-semibold text-text-muted">At a glance</h2>
+
+            <StartingBalanceCard />
 
             <div className="rounded-xl bg-linear-to-br from-accent/30 to-accent/5 p-4">
                 <p className="text-xs font-medium text-white/80">

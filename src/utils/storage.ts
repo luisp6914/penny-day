@@ -1,8 +1,10 @@
+import type { StartingBalance } from "../types/balance";
 import type { Debt } from "../types/debt";
 import type { Transaction } from "../types/transaction";
 
 export const TRANSACTIONS_KEY = "pennyday:transactions:v1";
 export const DEBTS_KEY = "pennyday:debts:v1";
+export const BALANCE_KEY = "pennyday:startingBalance:v1";
 
 function isTransaction(value: unknown): value is Transaction {
     if (typeof value !== "object" || value === null) return false;
@@ -41,6 +43,26 @@ export function loadTransactions(): Transaction[] {
 
 export function loadDebts(): Debt[] {
     return loadList(DEBTS_KEY, isDebt);
+}
+
+export function loadStartingBalance(): StartingBalance | null {
+    try {
+        const parsed: unknown = JSON.parse(localStorage.getItem(BALANCE_KEY) ?? "null");
+        if (typeof parsed !== "object" || parsed === null) return null;
+        const { amount, asOf } = parsed as Record<string, unknown>;
+        return typeof amount === "number" && typeof asOf === "string" ? { amount, asOf } : null;
+    } catch {
+        return null;
+    }
+}
+
+export function saveStartingBalance(balance: StartingBalance | null): void {
+    try {
+        if (balance) localStorage.setItem(BALANCE_KEY, JSON.stringify(balance));
+        else localStorage.removeItem(BALANCE_KEY);
+    } catch {
+        //Storage can be full or blocked; keep working in memory.
+    }
 }
 
 export function saveList(key: string, items: unknown[]): void {
