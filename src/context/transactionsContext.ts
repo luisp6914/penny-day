@@ -1,4 +1,5 @@
 import { createContext } from "react";
+import type { StartingBalance } from "../types/balance";
 import type { Debt, NewDebt } from "../types/debt";
 import type { NewTransaction, Transaction } from "../types/transaction";
 
@@ -23,3 +24,10 @@ export interface DebtsContextValue {
 }
 
 export const DebtsContext = createContext<DebtsContextValue | null>(null);
+
+export interface BalanceContextValue {
+    startingBalance: StartingBalance | null;
+    setStartingBalance: (balance: StartingBalance | null) => void;
+}
+
+export const BalanceContext = createContext<BalanceContextValue | null>(null);
