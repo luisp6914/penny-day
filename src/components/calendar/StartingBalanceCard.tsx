@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import { useStartingBalance } from "../../hooks/useTransactions";
+import { TYPE_COLORS } from "../../constants/transactionTypes";
+import { useOccurrences, useStartingBalance, useTransactions } from "../../hooks/useTransactions";
 import { formatFullDate, todayKey } from "../../utils/date";
 import { formatCurrency } from "../../utils/money";
 import { inputClass, primaryButtonClass, secondaryButtonClass } from "../ui/styles";
@@ -8,15 +9,27 @@ import { inputClass, primaryButtonClass, secondaryButtonClass } from "../ui/styl
 //Lets the user say how much money they actually have, so the weekly running balance starts from reality.
 const StartingBalanceCard = () => {
     const { startingBalance, setStartingBalance } = useStartingBalance();
+    const { completeOccurrence } = useTransactions();
     const [isEditing, setIsEditing] = useState(false);
     const [amount, setAmount] = useState("");
     const [asOf, setAsOf] = useState(todayKey);
     const [error, setError] = useState<string | null>(null);
+    const [notYetIn, setNotYetIn] = useState<Set<string>>(new Set()); //same-day items the user unticked
+
+    //Items due on the balance day that aren't marked yet: the balance may or may not include them.
+    const sameDay = useOccurrences(asOf || todayKey(), asOf || todayKey()).filter(o => !o.actualDate);
+
+    const toggleIncluded = (key: string) => setNotYetIn(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+    });
 
     const startEditing = () => {
         setAmount(startingBalance ? String(startingBalance.amount) : "");
         setAsOf(startingBalance?.asOf ?? todayKey());
         setError(null);
+        setNotYetIn(new Set());
         setIsEditing(true);
     };
 
@@ -25,6 +38,11 @@ const StartingBalanceCard = () => {
         const parsed = Number(amount);
         if (amount.trim() === "" || !Number.isFinite(parsed)) return setError("Enter your balance (it can be negative).");
         if (!asOf) return setError("Pick the date this balance is from.");
+        //Ticked items already went through, so mark them done on the balance day; that keeps them
+        //from being added or subtracted a second time.
+        for (const o of sameDay) {
+            if (!notYetIn.has(o.key)) completeOccurrence(o.transaction.id, o.expectedDate, asOf);
+        }
         setStartingBalance({ amount: Math.round(parsed * 100) / 100, asOf });
         setIsEditing(false);
     };
@@ -46,6 +64,27 @@ const StartingBalanceCard = () => {
                         <input type="date" className={inputClass} value={asOf} onChange={(e) => setAsOf(e.target.value)} />
                     </label>
                 </div>
+                {sameDay.length > 0 && (
+                    <fieldset className="rounded-lg bg-white/5 p-2.5">
+                        <legend className="sr-only">Already in this balance</legend>
+                        <p className="mb-2 text-xs font-semibold text-white">Already in this balance?</p>
+                        <p className="mb-2 text-[0.7rem] text-text-muted">These are due on this day. Untick anything that hasn't gone through yet.</p>
+                        <ul className="flex flex-col gap-1.5">
+                            {sameDay.map(o => (
+                                <li key={o.key}>
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white">
+                                        <input type="checkbox" className="h-4 w-4 accent-accent" checked={!notYetIn.has(o.key)} onChange={() => toggleIncluded(o.key)} />
+                                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: TYPE_COLORS[o.transaction.type] }} aria-hidden />
+                                        <span className="min-w-0 flex-1 truncate">{o.transaction.title}</span>
+                                        <span className={`shrink-0 tabular-nums ${o.transaction.type === "Income" ? "text-income" : "text-text-muted"}`}>
+                                            {o.transaction.type === "Income" ? "+" : "−"}{formatCurrency(o.transaction.amount)}
+                                        </span>
+                                    </label>
+                                </li>
+                            ))}
+                        </ul>
+                    </fieldset>
+                )}
                 <p className="text-[0.7rem] text-text-muted">
                     Anything dated before this day, or already marked paid or received by then, is treated as already in this balance.
                 </p>

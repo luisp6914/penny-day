@@ -39,12 +39,13 @@ export function getWeeklySummaries(
     from: string,
     to: string,
     balance: StartingBalance | null = null,
+    today?: string,
 ): WeekSummary[] {
     const start = chainStart(transactions, from, balance);
     const firstWeek = weekStartOf(start < from ? start : from);
     const balanceWeek = balance ? weekStartOf(balance.asOf) : null;
     const lastWeek = weekStartOf(to);
-    const occurrences = getOccurrences(transactions, firstWeek, addDays(lastWeek, 6));
+    const occurrences = getOccurrences(transactions, firstWeek, addDays(lastWeek, 6), today);
 
     const byWeek = new Map<string, Occurrence[]>();
     for (const occurrence of occurrences) {
@@ -93,7 +94,7 @@ const NEXT_INCOME_LOOKAHEAD_DAYS = 62;
 export function getSafeToSpend(transactions: Transaction[], today: string, balance: StartingBalance | null = null): SafeToSpend {
     const start = chainStart(transactions, today, balance);
     const from = start < today ? start : today;
-    const occurrences = getOccurrences(transactions, from, addDays(today, NEXT_INCOME_LOOKAHEAD_DAYS));
+    const occurrences = getOccurrences(transactions, from, addDays(today, NEXT_INCOME_LOOKAHEAD_DAYS), today);
     const nextIncome = occurrences.find(o => o.transaction.type === "Income" && o.expectedDate > today);
     const through = nextIncome ? addDays(nextIncome.expectedDate, -1) : addDays(weekStartOf(today), 6);
 

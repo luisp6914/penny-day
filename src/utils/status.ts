@@ -1,6 +1,7 @@
 import { COMPLETED_LABEL } from "../constants/transactionTypes";
 import type { Occurrence } from "../types/transaction";
 import { todayKey } from "./date";
+import { isAutoSaved } from "./recurrence";
 
 export type StatusTone = "pending" | "success" | "warning" | "danger";
 
@@ -13,6 +14,10 @@ export interface OccurrenceStatus {
 export function getOccurrenceStatus(occurrence: Occurrence, today: string = todayKey()): OccurrenceStatus {
     const { type } = occurrence.transaction;
     const done = COMPLETED_LABEL[type];
+
+    if (isAutoSaved(occurrence.transaction) && !occurrence.transaction.completions[occurrence.expectedDate]) {
+        return occurrence.actualDate ? { label: "Auto-saved", tone: "success" } : { label: "Scheduled", tone: "pending" };
+    }
 
     if (occurrence.actualDate) {
         if (occurrence.actualDate < occurrence.expectedDate) return { label: `${done} early`, tone: "success" };
